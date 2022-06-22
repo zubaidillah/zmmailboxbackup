@@ -1,0 +1,44 @@
+##!/bin/bash
+
+## Backup Format
+FORMAT=tgz
+
+## Backup location
+ZBACKUP=/mnt/mail-storage/backups
+
+## Folder name for backup and using date
+DATE=`date +"%d%m%y"`
+
+## Backup location separate by date
+ZDUMPDIR=$ZBACKUP/$DATE
+
+## zmmailbox location
+ZMBOX=/opt/zimbra/bin/zmmailbox
+
+### Backup Option ###
+
+# Last Month
+LLASTDATE=`date -d "$(date +%Y%m01) -1 month -1 day" +%m/%d/%Y`
+TFIRSTDATE=`date -d "$(date +%Y%m01)" +%m/%d/%Y`
+
+QUERY="&query=after:$LLASTDATE before:$TFIRSTDATE"
+
+## Check direktori backup
+#
+if [ ! -d $ZDUMPDIR ]; then
+        mkdir -p $ZDUMPDIR
+fi
+
+## Looping Account Zimbra
+#for account in `su - zimbra -c 'zmprov -l gaa | sort'`
+#
+for account in `zmprov -l gaa | sort`
+do
+        # Get mailbox size
+        mbox_size=`$ZMBOX -z -m $account gms`
+        
+        # Check mailbox size
+        if [ "$mbox_size" != "0 B" ]; then
+                $ZMBOX -z -m $account getRestURL "//?fmt=${FORMAT}$QUERY" > $ZDUMPDIR/$account.${FORMAT}
+        fi
+done
